@@ -1,5 +1,5 @@
 import clsx from "clsx"
-import { Fragment, useLayoutEffect, useMemo, useReducer, useRef } from "react"
+import { Fragment, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from "react"
 import { Area, Editor, handleInfo } from "../components/Editor"
 
 const HANDLE_SIZE = 8
@@ -11,7 +11,7 @@ export default function Home() {
 
   const [, forceUpdate] = useReducer(() => ({}), {})
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const current = $canvas.current!
     function mouseDownEvent(this: any, event: any) {
       const areaId = event.target?.dataset?.areaId || null
@@ -21,13 +21,11 @@ export default function Home() {
     }
 
     function mouseMoveEvent(event: any) {
-      if (!editor.state.dragging) return
       const { x, y } = current.getBoundingClientRect()
       editor.mouseMove({ x: event.clientX - x, y: event.clientY - y })
     }
 
     function mouseUpEvent(event: MouseEvent) {
-      if (!editor.state.dragging) return
       const { x, y } = current.getBoundingClientRect()
       editor.mouseUp({ x: event.clientX - x, y: event.clientY - y })
     }
