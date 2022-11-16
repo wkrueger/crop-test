@@ -16,7 +16,6 @@ export default function Home() {
     function mouseDownEvent(this: any, event: any) {
       const areaId = event.target?.dataset?.areaId || null
       const handleType = event.target?.dataset?.handle || null
-      console.log("md", this, event, areaId, handleType)
       const { x, y } = current.getBoundingClientRect()
       editor.mouseDown({ x: event.clientX - x, y: event.clientY - y }, areaId, handleType)
     }
@@ -24,7 +23,7 @@ export default function Home() {
     function mouseMoveEvent(event: any) {
       if (!editor.state.dragging) return
       const { x, y } = current.getBoundingClientRect()
-      editor.dragTick({ x: event.clientX - x, y: event.clientY - y })
+      editor.mouseMove({ x: event.clientX - x, y: event.clientY - y })
     }
 
     function mouseUpEvent(event: MouseEvent) {

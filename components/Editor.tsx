@@ -57,12 +57,6 @@ export class Editor {
     this.changeListeners.push(fn)
   }
 
-  protected dispatchChange() {
-    for (const listener of this.changeListeners) {
-      listener(this.state)
-    }
-  }
-
   close() {
     this.changeListeners = []
   }
@@ -74,16 +68,6 @@ export class Editor {
         state.selectedArea = null
       }
     })
-  }
-
-  protected setState(fn: (state: typeof this["state"]) => void) {
-    const oldState = this.state
-    this.state = immer(this.state, draft => {
-      fn(draft)
-    })
-    if (oldState !== this.state) {
-      this.dispatchChange()
-    }
   }
 
   mouseDown(coord: Coord, areaId: string | null, areaFeature: "border" | HandlePos | null) {
@@ -100,7 +84,58 @@ export class Editor {
     })
   }
 
-  dragStart(state: this["state"]) {
+  mouseMove(coord: Coord) {
+    if (!this.state.dragging) return
+    const state = this.state
+    state.dragging!.dragCurrent = coord
+
+    const diff = [
+      state.dragging!.dragCurrent.x - state.dragging!.dragStart.x,
+      state.dragging!.dragCurrent.y - state.dragging!.dragStart.y,
+    ]
+    if (!state.dragging!.threshold) {
+      const distance = Math.sqrt(Math.pow(diff[0], 2) + Math.pow(diff[1], 2))
+      if (distance > 20) {
+        state.dragging!.threshold = true
+        this.setState(state => {
+          this.dragStart(state)
+        })
+      }
+    }
+    if (!state.dragging?.threshold) {
+      return
+    }
+
+    this.dragTick(coord, diff)
+  }
+
+  mouseUp(coord: Coord) {
+    this.state.dragging!.dragCurrent = coord
+    if (this.state.dragging?.threshold) {
+      this.dragEnd(coord)
+    } else {
+      this.mouseClick()
+    }
+    this.state.dragging = null
+  }
+
+  protected setState(fn: (state: typeof this["state"]) => void) {
+    const oldState = this.state
+    this.state = immer(this.state, draft => {
+      fn(draft)
+    })
+    if (oldState !== this.state) {
+      this.dispatchChange()
+    }
+  }
+
+  protected dispatchChange() {
+    for (const listener of this.changeListeners) {
+      listener(this.state)
+    }
+  }
+
+  protected dragStart(state: this["state"]) {
     const coord = state.dragging!.dragCurrent!
     const areaId = state.dragging!.areaId!
     const areaFeature = state.dragging!.areaFeature!
@@ -125,29 +160,7 @@ export class Editor {
     }
   }
 
-  dragTick(coord: Coord) {
-    if (!this.state.dragging) return
-
-    const state = this.state
-    state.dragging!.dragCurrent = coord
-
-    const diff = [
-      state.dragging!.dragCurrent.x - state.dragging!.dragStart.x,
-      state.dragging!.dragCurrent.y - state.dragging!.dragStart.y,
-    ]
-    if (!state.dragging!.threshold) {
-      const distance = Math.sqrt(Math.pow(diff[0], 2) + Math.pow(diff[1], 2))
-      if (distance > 20) {
-        state.dragging!.threshold = true
-        this.setState(state => {
-          this.dragStart(state)
-        })
-      }
-    }
-    if (!state.dragging?.threshold) {
-      return
-    }
-
+  protected dragTick(coord: Coord, diff: [number, number]) {
     if (this.state.addMode) {
       this.setState(state => {
         const area = state.areasIdx[state.addMode!.areaId]
@@ -180,8 +193,8 @@ export class Editor {
     }
   }
 
-  dragEnd(coord: Coord) {
-    this.dragTick(coord)
+  protected dragEnd(coord: Coord) {
+    this.mouseMove(coord)
 
     this.setState(state => {
       if (state.addMode) {
@@ -200,23 +213,12 @@ export class Editor {
     })
   }
 
-  mouseClick() {
+  protected mouseClick() {
     if (this.state.mode === "edit") {
       const areaId = this.state.dragging?.areaId || null
       this.setState(state => {
         state.selectedArea = areaId
       })
     }
-  }
-
-  mouseUp(coord: Coord) {
-    this.state.dragging!.dragCurrent = coord
-
-    if (this.state.dragging?.threshold) {
-      this.dragEnd(coord)
-    } else {
-      this.mouseClick()
-    }
-    this.state.dragging = null
   }
 }
