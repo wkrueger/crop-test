@@ -89,7 +89,7 @@ export class Editor {
     const state = this.state
     state.dragging!.dragCurrent = coord
 
-    const diff = [
+    const diff: [number, number] = [
       state.dragging!.dragCurrent.x - state.dragging!.dragStart.x,
       state.dragging!.dragCurrent.y - state.dragging!.dragStart.y,
     ]
